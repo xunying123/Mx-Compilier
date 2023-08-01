@@ -21,6 +21,19 @@ Break:    'break';
 Continue: 'continue';
 Return:   'return';
 
+OpInc : '++';
+OpDec : '--';
+OpSr : '>>';
+OpSl : '<<';
+
+OpLogAnd : '&&';
+OpLogOr : '||';
+
+OpAnd : '&';
+OpOr :  '|';
+OpNor : '^';
+OpNot : '~';
+
 OpAdd : '+';
 OpSub : '-';
 OpMul : '*';
@@ -33,21 +46,12 @@ OpLe : '<=';
 OpNe : '!=';
 OpEq : '==';
 
-OpLogAnd : '&&';
-OpLogOr : '||';
+Ask : '?';
+Colon : ':';
+
 OpLogNot : '!';
 
-OpSr : '>>';
-OpSl : '<<';
-OpAnd : '&';
-OpOr :  '|';
-OpNor : '^';
-OpNot : '~';
-
 OpAss : '=';
-
-OpInc : '++';
-OpDec : '--';
 
 OpObj : '.';
 
@@ -72,7 +76,7 @@ fragment StringChara : ~["\\\n\r\u2028\u2029] | '\\' EscapeChara;
 Identifier : Letter IdentiChara*;
 
 LogicLiteral : True | False;
-InterLiteral : '0' | DigitEx0 Digit*;
+InterLiteral : '0' | (DigitEx0 Digit*);
 StringLiteral : '"' StringChara* '"';
 NullLiteral : Null;
 

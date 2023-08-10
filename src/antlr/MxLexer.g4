@@ -75,10 +75,8 @@ fragment StringChara : ~["\\\n\r\u2028\u2029] | '\\' EscapeChara;
 
 Identifier : Letter IdentiChara*;
 
-LogicLiteral : True | False;
 InterLiteral : '0' | (DigitEx0 Digit*);
 StringLiteral : '"' StringChara* '"';
-NullLiteral : Null;
 
 Space : (' ' | '\t' | '\u000B' | '\u000C' | '\u00A0') ->channel(HIDDEN);
 Line : ('\r' | '\n' | '\u2028' | '\u2029') ->channel(HIDDEN);

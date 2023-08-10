@@ -1,10 +1,10 @@
 package src.ast.astnode;
 
 import src.ast.Position;
-import src.ast.FuncAndVaria;
+import src.ast.BuiltIn;
 import src.ast.Visitor;
 
-abstract public class AstNode implements FuncAndVaria {
+abstract public class AstNode implements BuiltIn {
     public Position pos;
 
     public AstNode(Position pos_) {

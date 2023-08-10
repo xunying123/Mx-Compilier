@@ -2,7 +2,7 @@ package src.ast.astnode.statement;
 
 import src.ast.*;
 
-public class Break extends Statement{
+public class Break extends Statements {
     public Break(Position pos_) {
         super(pos_);
     }

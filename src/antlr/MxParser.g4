@@ -4,88 +4,79 @@ options {
   tokenVocab=MxLexer;
 }
 
-fileAnalyze : blocks* EOF;
+fileAnalyze : (functionDeclaration | variableDeclaration | classDeclaration)* EOF;
 
-blocks : function | variableDeclaration | classDeclaration;
+functionDeclaration : returnTypename Identifier '(' parameterList? ')'  '{' blockStatement '}';
 
-function : typename identifier '(' (parameterList?) ')' blockStatement;
-parameterList : parameter (',' parameter)*;
-parameter : typename identifier;
+returnTypename : typename| Void;
 
-classDeclaration : 'class' identifier '{' (classBody*) '}' ';';
-classBody : variableDeclaration | function | construction;
-construction : identifier '(' ')' blockStatement;
-functionCall : expression (',' expression)* ;
+parameterList : (typename Identifier) (Comma typename Identifier)*;
 
-identifier : Identifier;
-basicVariable : Void | Bool | Int | String ;
-typename : basicVariable | identifier | typename '[' ']';
-declaration : identifier ('=' expression)?;
-variableDeclaration : typename declaration (',' declaration)* ';';
-newExperssion : 'new' newVariable ('(' ')')?;
+blockStatement : statement*;
 
+classDeclaration : Class Identifier '{' (variableDeclaration | functionDeclaration | construction )* '}' SemiColon;
 
-newVariable : identifier |
-              identifier newArrayExpression+ newArrayEmpty* |
-              basicVariable newArrayExpression+ newArrayEmpty*;
+construction : Identifier '(' ')' '{' blockStatement '}';
 
-blockStatement : '{' statement* '}' ;
-statement : variableDeclaration |
+variableDeclaration : typename declaration (Comma declaration)* SemiColon;
+
+declaration : Identifier (OpAss expression)?;
+
+typename : name ('[' ']')*;
+
+basicVariable : Bool | Int | String ;
+
+name : basicVariable | Identifier;
+
+statement : '{' blockStatement '}' |
+            variableDeclaration |
             expressionStatement |
-            branchStatement |
-            loopStatement |
-            controlStatement |
-            blockStatement |
-            emptyStatement;
+            ifStatement |
+            whileStatement |
+            forStatement |
+            breakStatement |
+            continueStatement |
+            returnStatement ;
 
-stringLiteral : StringLiteral;
-thisLiteral : 'this';
-logicLiteral : 'true' | 'false';
-nullLiteral : NullLiteral ;
-numberLiteral : InterLiteral;
+ifStatement : If '(' expression ')' statement (Else statement)?;
 
-expressionStatement : expression ';';
-emptyStatement : ';';
-branchStatement : If '(' expression ')' statement (Else statement)?;
-loopStatement : While '(' expression ')' statement |
-                For '(' variableDeclaration? ';' expression? ';' expression? ')' statement |
-                For '(' expression? ';' expression? ';' expression? ')'statement;
-continueStatement : Continue ';';
-breakStatement : Break ';';
-returnStatement : Return expression? ';';
-controlStatement : continueStatement |
-                   breakStatement |
-                   returnStatement ;
+whileStatement : While '(' expression ')' statement ;
 
-expression :  '(' expression ')'
-            | expression '.' identifier
-            | expression '.' identifier '(' functionCall ')'
-            | expression '(' functionCall ')'
-            | expression ('[' expression ']')+
-            | expression ('++'|'--')
-            | newExperssion
-            | <assoc=right> ('++'|'--') expression
-            | <assoc=right> ('!' | '-' | '~' | '+') expression
-            | expression ('*'|'/'|'%') expression
-            | expression ('+'|'-') expression
-            | expression ('>>'|'<<') expression
-            | expression ('<'|'>'|'<='|'>='|'=='|'!=') expression
-            | expression '&' expression
-            | expression '|' expression
-            | expression '^' expression
-            | expression '&&' expression
-            | expression '||' expression
-            | <assoc=right> expression '=' expression
-            | <assoc=right> expression '?' expression ':' expression
-            | identifier
-            | literal;
+forStatement : For '(' forVar expressionStatement expression? ')' statement ;
 
+forVar : variableDeclaration | expressionStatement ;
 
-literal : stringLiteral |
-          thisLiteral |
-          logicLiteral |
-          nullLiteral |
-          numberLiteral ;
+breakStatement : Break SemiColon;
 
-newArrayExpression : '[' expression ']';
-newArrayEmpty : '[' ']' ;
+continueStatement : Continue SemiColon;
+
+returnStatement : Return expression? SemiColon;
+
+expressionStatement : expression? SemiColon;
+
+expression :  '(' expression ')'                                                      #parent
+            | New name (newArrayExpression)* ('(' ')')?                               #newEx
+            | expression op=OpObj Identifier                                          #objEx
+            | expression '[' expression ']'                                           #arrayEx
+            | expression '(' functionCall ')'                                         #funEx
+            | op = (OpInc | OpDec) expression                                         #leftEx
+            | <assoc=right> expression op = (OpInc | OpDec)                           #unaryEx
+            | <assoc=right> op = (OpLogNot | OpSub | OpNot | OpAdd ) expression       #unaryEx
+            | expression op = ( OpMul | OpDiv | OpMod ) expression                    #binaryEx
+            | expression op = ( OpAdd | OpSub ) expression                            #binaryEx
+            | expression op = ( OpSr | OpSl ) expression                              #binaryEx
+            | expression op = ( OpGt | OpLt | OpGe | OpLe | OpNe | OpEq ) expression  #binaryEx
+            | expression op=OpAnd expression                                          #binaryEx
+            | expression op=OpOr expression                                           #binaryEx
+            | expression op=OpNor expression                                          #binaryEx
+            | expression op=OpLogAnd expression                                       #binaryEx
+            | expression op=OpLogOr expression                                        #binaryEx
+            | <assoc=right> expression op=OpAss expression                            #assEx
+            | <assoc=right> expression op=Ask expression op=Colon expression          #ternaryEx
+            | basicExpression                                                         #basicEx ;
+
+newArrayExpression : '[' expression? ']';
+
+functionCall : expression (Comma expression)* ;
+
+basicExpression : InterLiteral | StringLiteral | True | False | Null | Identifier | This ;

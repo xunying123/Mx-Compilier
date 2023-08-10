@@ -2,9 +2,8 @@ package src.ast.astnode.statement;
 
 import src.ast.Position;
 import src.ast.Visitor;
-import src.ast.astnode.statement.*;
 
-public class Continue extends Statement{
+public class Continue extends Statements {
     public Continue(Position pos) {
         super(pos);
     }

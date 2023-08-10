@@ -4,7 +4,7 @@ import src.ast.Position;
 import src.ast.Visitor;
 import src.ast.astnode.expression.ExpressionNode;
 
-public class Expression  extends Statement{
+public class Expression  extends Statements {
     public ExpressionNode expre;
     public  Expression(Position pos,ExpressionNode node) {
         super(pos);

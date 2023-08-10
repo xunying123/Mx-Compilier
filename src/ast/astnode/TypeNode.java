@@ -26,9 +26,6 @@ public class TypeNode extends AstNode{
             case "BOOL" -> {
                 this.type = Bool;
             }
-            case "NULL" -> {
-                this.type=Null;
-            }
             default -> this.type = new Type(name_);
         }
     }
@@ -48,9 +45,6 @@ public class TypeNode extends AstNode{
                 }
                 case "BOOL" -> {
                     this.type = Bool;
-                }
-                case "NULL" -> {
-                    this.type=Null;
                 }
                 default -> this.type = new Type(name_);
             }

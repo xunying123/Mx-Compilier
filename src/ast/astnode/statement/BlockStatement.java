@@ -2,12 +2,14 @@ package src.ast.astnode.statement;
 
 import src.ast.Position;
 import src.ast.Visitor;
-import src.ast.astnode.expression.ExpressionNode;
 
-public class While extends baseloop{
-    public While(Position pos_, ExpressionNode exp) {
+import java.util.ArrayList;
+
+public class BlockStatement extends Statements {
+    public ArrayList<Statements> state = new ArrayList<>();
+
+    public BlockStatement(Position pos_) {
         super(pos_);
-        this.loopExp =exp;
     }
 
     @Override

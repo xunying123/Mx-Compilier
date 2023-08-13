@@ -21,8 +21,7 @@ public class Construction extends AstNode {
         FunctionDefinition funcc = new FunctionDefinition(pos,name);
         funcc.returnType=new TypeNode(pos,"void");
         funcc.sta=block.state;
-        this.func=funcc;
-        return funcc;
+        return this.func=funcc;
     }
 
     @Override

@@ -5,10 +5,10 @@ import src.ast.Visitor;
 import src.ast.astnode.expression.ExpressionNode;
 
 public class Expression  extends Statements {
-    public ExpressionNode expre;
+    public ExpressionNode express;
     public  Expression(Position pos,ExpressionNode node) {
         super(pos);
-        this.expre=node;
+        this.express =node;
     }
 
     @Override

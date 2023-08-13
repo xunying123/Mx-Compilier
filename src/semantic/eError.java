@@ -20,6 +20,6 @@ public class eError extends RuntimeException{
 
     @Override
     public String toString() {
-        return "Warning: " + warning + " " + pos.toString() + " " + ss;
+        return "Warning: " + warning + "  at" + pos.toString() + " " + ss;
     }
 }

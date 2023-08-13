@@ -15,7 +15,7 @@ public class ternaryEx extends ExpressionNode{
 
     @Override
     public boolean isLeft() {
-        return false;
+        return exp3.isLeft();
     }
 
     @Override

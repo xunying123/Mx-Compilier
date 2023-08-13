@@ -1,6 +1,7 @@
 package src.ast.astnode.definition;
 
 import src.ast.Position;
+import src.ast.Type;
 import src.ast.Visitor;
 import src.ast.astnode.AstNode;
 
@@ -27,5 +28,11 @@ public class ClassDefinition extends AstNode {
     @Override
     public void accept(Visitor vis) {
         vis.visit(this);
+    }
+
+    public Type getType(String name) {
+        Declaration vv =varMap.get(name);
+        if(vv==null) return null;
+        return vv.type.type;
     }
 }

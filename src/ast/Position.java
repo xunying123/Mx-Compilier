@@ -2,6 +2,7 @@ package src.ast;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 public class Position {
     private final int line;
@@ -17,20 +18,16 @@ public class Position {
         this.column = token.getCharPositionInLine();
     }
 
+    public Position(TerminalNode terminal) {
+        this(terminal.getSymbol());
+    }
+
     public Position(ParserRuleContext ctx) {
         this(ctx.getStart());
     }
 
-    public String tostring() {
+    public String toString() {
         return line + ":" + column;
-    }
-
-    public int line () {
-        return this.line;
-    }
-
-    public int column () {
-        return this.column;
     }
 
 }

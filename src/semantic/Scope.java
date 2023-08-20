@@ -1,5 +1,7 @@
 package src.semantic;
 
+import src.IR.basic.IRFunction;
+import src.IR.basic.IRRegister;
 import src.ast.Type;
 import src.ast.astnode.definition.ClassDefinition;
 import src.ast.astnode.statement.baseloop;
@@ -15,6 +17,8 @@ public class Scope {
     public Type retu = null;
     public boolean isRE = false;
 
+    public HashMap<String, IRRegister> IRVar = new HashMap<>();
+    public HashMap<String, IRFunction> IRFunc = new HashMap<>();
     public Scope() {
     }
 
@@ -35,6 +39,12 @@ public class Scope {
     public Scope(Scope par,ClassDefinition cla) {
         this.parent=par;
         this.inCla=cla;
+    }
+
+    public Scope(Scope par,baseloop inin) {
+        this(par);
+        this.inLoop=true;
+        this.inLoo=inin;
     }
 
     public Scope(Scope par,boolean inl) {
@@ -58,5 +68,15 @@ public class Scope {
         return members.containsKey(name);
     }
 
+    public void addIRVar(String name,IRRegister re) {
+        IRVar.put(name ,re);
+    }
 
+    public IRRegister getIRVar(String name) {
+        if(IRVar.containsKey(name)) {
+            return IRVar.get(name);
+        } else {
+            return parent==null?null:parent.getIRVar(name);
+        }
+    }
 }

@@ -120,7 +120,7 @@ public class Checker implements Visitor, BuiltIn {
         if (!node.loopExp.type.equals(Bool)) {
             throw new eError(node.pos, "no bool");
         }
-        current = new Scope(current,true);
+        current = new Scope(current, true);
         node.sta.forEach(vv -> vv.accept(this));
         current = current.parent;
     }
@@ -128,12 +128,12 @@ public class Checker implements Visitor, BuiltIn {
     public void visit(ArrayEx node) {
         node.array.accept(this);
         node.index.accept(this);
-        if(node.array.type==null || node.index.type==null || (!node.index.type.equals(Int))) {
-            throw new eError(node.pos,"wrong expression");
+        if (node.array.type == null || node.index.type == null || (!node.index.type.equals(Int))) {
+            throw new eError(node.pos, "wrong expression");
         }
-        node.type=new Type(node.array.type.name,node.array.type.dim-1);
-        if(node.type.dim<0) {
-            throw new eError(node.pos,"mismatch");
+        node.type = new Type(node.array.type.name, node.array.type.dim - 1);
+        if (node.type.dim < 0) {
+            throw new eError(node.pos, "mismatch");
         }
     }
 
@@ -148,9 +148,6 @@ public class Checker implements Visitor, BuiltIn {
                 node.type = Bool;
                 return;
             } else if (!node.leftNode.type.equals(node.rightNode.type)) {
-                System.out.print(node.leftNode.type.name);
-                System.out.print(node.leftNode.type.dim);
-                System.out.print(node.rightNode.type.name);
                 throw new eError(node.pos, "wrong type");
             }
         }
@@ -190,45 +187,45 @@ public class Checker implements Visitor, BuiltIn {
     public void visit(AssignEx node) {
         node.leftNode.accept(this);
         node.rightNode.accept(this);
-        if(node.leftNode.type==null || node.rightNode.type==null) {
-            throw new eError(node.pos,"wrong expression");
+        if (node.leftNode.type == null || node.rightNode.type == null) {
+            throw new eError(node.pos, "wrong expression");
         }
-        if(node.leftNode.type.equals(Void) || node.rightNode.type.equals(Void)) {
-            throw new eError(node.pos,"wrong expression");
+        if (node.leftNode.type.equals(Void) || node.rightNode.type.equals(Void)) {
+            throw new eError(node.pos, "wrong expression");
         }
-        if((!node.leftNode.type.equals(node.rightNode.type)) && ((!node.leftNode.type.isReference()) || (!node.rightNode.type.equals(Null)))) {
-            throw new eError(node.pos,"mismatch");
+        if ((!node.leftNode.type.equals(node.rightNode.type)) && ((!node.leftNode.type.isReference()) || (!node.rightNode.type.equals(Null)))) {
+            throw new eError(node.pos, "mismatch");
         }
-        node.type=node.leftNode.type;
-        if(!node.leftNode.isLeft()) {
-            throw new eError(node.pos,"no left value");
+        node.type = node.leftNode.type;
+        if (!node.leftNode.isLeft()) {
+            throw new eError(node.pos, "no left value");
         }
     }
 
     public void visit(ObjectEx node) {
         node.obj.accept(this);
-        if(node.obj.type==null) {
-            throw new eError(node.pos,"wrong expression");
+        if (node.obj.type == null) {
+            throw new eError(node.pos, "wrong expression");
         }
 
-        if(!node.obj.type.isReference() && !node.obj.type.equals(This) && !node.obj.type.equals(string)) {
-           System.out.print(node.obj.type.name);
-           System.out.print(node.obj.type.Class);
-            throw new eError(node.pos,"mismatch");
+        if (!node.obj.type.isReference() && !node.obj.type.equals(This) && !node.obj.type.equals(string)) {
+            System.out.print(node.obj.type.name);
+            System.out.print(node.obj.type.Class);
+            throw new eError(node.pos, "mismatch");
         }
-        var cla = node.obj.type.equals(This)?current.inCla:glo.getCla(node.obj.type.name);
-        if(node.obj.type.dim>0) {
-            if(cla==null) {
-                throw new eError(node.pos,"mismatch");
+        var cla = node.obj.type.equals(This) ? current.inCla : glo.getCla(node.obj.type.name);
+        if (node.obj.type.dim > 0) {
+            if (cla == null) {
+                throw new eError(node.pos, "mismatch");
             }
-            if(node.objTo.equals("size")) {
-                node.func=ArraySizeFunc;
+            if (node.objTo.equals("size")) {
+                node.func = ArraySizeFunc;
             }
         } else {
-            if(cla==null) {
-                throw new eError(node.pos,"mismatch");
+            if (cla == null) {
+                throw new eError(node.pos, "mismatch");
             }
-            node.type=cla.getType(node.objTo);
+            node.type = cla.getType(node.objTo);
             node.func = cla.getFunc(node.objTo);
         }
     }
@@ -239,39 +236,39 @@ public class Checker implements Visitor, BuiltIn {
 
     public void visit(FunctionEx node) {
         node.functi.accept(this);
-        if(node.functi.func ==null) {
-            throw new eError(node.pos,"function is not defined" + node.functi.ss);
+        if (node.functi.func == null) {
+            throw new eError(node.pos, "function is not defined" + node.functi.ss);
         }
         var ff = node.functi.func;
-        if(node.exps !=null) {
+        if (node.exps != null) {
             node.exps.accept(this);
-            if(ff.para==null || ff.para.list.size()!=node.exps.express.size()) {
-                throw new eError(node.pos,"wrong parameter");
+            if (ff.para == null || ff.para.list.size() != node.exps.express.size()) {
+                throw new eError(node.pos, "wrong parameter");
             }
-            for(int i=0;i<ff.para.list.size();i++) {
+            for (int i = 0; i < ff.para.list.size(); i++) {
                 var par = ff.para.list.get(i);
                 var pp = node.exps.express.get(i);
-                if((!par.type.type.equals(pp.type)) && ((!par.type.type.isReference()) || (!pp.type.equals(Null)))) {
-                    throw new eError(node.pos,"wrong parameter");
+                if ((!par.type.type.equals(pp.type)) && ((!par.type.type.isReference()) || (!pp.type.equals(Null)))) {
+                    throw new eError(node.pos, "wrong parameter");
                 }
             }
         } else {
-            if(ff.para !=null) {
-                throw new eError(node.pos,"no parameter" + ff.Name);
+            if (ff.para != null) {
+                throw new eError(node.pos, "no parameter" + ff.Name);
             }
         }
-        node.type=ff.returnType.type;
+        node.type = ff.returnType.type;
     }
 
     public void visit(NewEXp node) {
-        for(var ss : node.List) {
+        for (var ss : node.List) {
             ss.accept(this);
-            if(ss.type==null || !ss.type.equals(Int)) {
-                throw new eError(node.pos,"wrong expression");
+            if (ss.type == null || !ss.type.equals(Int)) {
+                throw new eError(node.pos, "wrong expression");
             }
         }
-        new TypeNode(node.pos,node.typeName).accept(this);
-        node.type=new Type(node.typeName,node.dim);
+        new TypeNode(node.pos, node.typeName).accept(this);
+        node.type = new Type(node.typeName, node.dim);
     }
 
     public void visit(Untary node) {
@@ -299,13 +296,13 @@ public class Checker implements Visitor, BuiltIn {
 
     public void visit(leftEx node) {
         node.exp.accept(this);
-        if(node.exp.type==null) {
-            throw new eError(node.pos,"wrong expression");
+        if (node.exp.type == null) {
+            throw new eError(node.pos, "wrong expression");
         }
-        if(!node.exp.isLeft() || !node.exp.type.equals(Int)) {
+        if (!node.exp.isLeft() || !node.exp.type.equals(Int)) {
             throw new eError(node.pos, "wrong left value");
         }
-        node.type=Int;
+        node.type = Int;
     }
 
     public void visit(BlockStatement node) {
@@ -335,25 +332,25 @@ public class Checker implements Visitor, BuiltIn {
         node.exp1.accept(this);
         node.exp2.accept(this);
         node.exp3.accept(this);
-        if(!(node.exp1.type.equals(Bool))) {
-            throw new eError(node.pos,"no bool");
+        if (!(node.exp1.type.equals(Bool))) {
+            throw new eError(node.pos, "no bool");
         }
-        if(node.exp2.type==null || node.exp3.type==null) {
-            throw new eError(node.pos,"wrong expression");
+        if (node.exp2.type == null || node.exp3.type == null) {
+            throw new eError(node.pos, "wrong expression");
         }
-        if(node.exp2.type.equals(node.exp3.type)) {
-            node.type=node.exp2.type;
-            return ;
+        if (node.exp2.type.equals(node.exp3.type)) {
+            node.type = node.exp2.type;
+            return;
         }
-        if(node.exp2.type.isReference() && node.exp3.type.equals(Null)) {
-            node.type=node.exp2.type;
-            return ;
+        if (node.exp2.type.isReference() && node.exp3.type.equals(Null)) {
+            node.type = node.exp2.type;
+            return;
         }
-        if(node.exp3.type.isReference() && node.exp2.type.equals(Null)) {
-            node.type=node.exp3.type;
-            return ;
+        if (node.exp3.type.isReference() && node.exp2.type.equals(Null)) {
+            node.type = node.exp3.type;
+            return;
         }
-        throw new eError(node.pos,"mismatch");
+        throw new eError(node.pos, "mismatch");
     }
 
     public void visit(Declaration node) {

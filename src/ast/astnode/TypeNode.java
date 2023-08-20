@@ -1,11 +1,13 @@
 package src.ast.astnode;
 
+import src.IR.irtype.IRType;
 import src.ast.Type;
 import src.ast.Position;
 import src.ast.Visitor;
 
 public class TypeNode extends AstNode{
    public Type type;
+   public IRType irType;
 
     public TypeNode(Position pos_) {
         super(pos_);

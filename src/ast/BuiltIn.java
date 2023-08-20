@@ -1,5 +1,6 @@
 package src.ast;
 
+import src.IR.irtype.*;
 import src.ast.astnode.definition.FunctionDefinition;
 
 public interface BuiltIn {
@@ -23,5 +24,23 @@ public interface BuiltIn {
     FunctionDefinition parseFunc = new FunctionDefinition(null,"parseInt","string",Int,null,0);
     FunctionDefinition ordFunc = new FunctionDefinition(null,"ord","string",Int,Int,1);
 
+    IRType irInt = new IRInt(32);
+    IRType irIntPtr = new IRPtr(irInt);
+    IRType irVoid = new IRVoid();
+    IRType irNull = new IRPtr(irVoid);
+    IRType irBool = new IRInt(8);
+    IRType irChar = new IRInt(8);
+    IRType irCond = new IRInt(1);
+    IRType irString = new IRPtr(irChar);
+
+    IRVoidConst irVoidConst = new IRVoidConst();
+    IRCondConst irTrue = new IRCondConst(true);
+    IRCondConst irFalse = new IRCondConst(false);
+    IRBoolConst irBoolTrue = new IRBoolConst(true);
+    IRBoolConst irBoolFalse = new IRBoolConst(false);
+    IRIntConst irInt0 = new IRIntConst(0);
+    IRIntConst irIntn1 = new IRIntConst(-1);
+    IRIntConst irInt1 = new IRIntConst(1);
+    IRIntConst irInt4 = new IRIntConst(4);
 
 }

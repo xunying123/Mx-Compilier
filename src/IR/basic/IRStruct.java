@@ -34,7 +34,7 @@ public class IRStruct extends IRType {
 
     @Override
     public String toString() {
-        return "%_Struct." + name;
+        return "%struct." + name;
     }
 
     @Override

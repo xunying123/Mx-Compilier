@@ -8,20 +8,21 @@ import src.ast.BuiltIn;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 
 public class IRFileAnalyze implements BuiltIn {
-    public ArrayList<IRFunction> fuc = new ArrayList<>();
+    public LinkedList<IRFunction> fuc = new LinkedList<>();
     public ArrayList<IRStruct> str = new ArrayList<>();
     public ArrayList<IRGlobalVar> var = new ArrayList<>();
 
     public HashMap<String, IRStringConst> string = new HashMap<>();
     public IRFunction initFunc = new IRFunction("Mx_global_init", irVoid);
     public IRFunction mainFunc;
-    public IRBlock initBlock = new IRBlock(initFunc, "entry_", 0);
+    public IRBlock initBlock = new IRBlock(initFunc, "entry_",0);
 
     public IRFileAnalyze() {
         initFunc.add(initBlock);
-        initFunc.exit = new IRBlock(initFunc, "return_", 0);
+        initFunc.exit = new IRBlock(initFunc, "return_",0);
         initBlock.ter = new IRJump(initBlock, initFunc.exit);
         initFunc.exit.ter = new IRRet(initFunc.exit, irVoidConst);
     }
@@ -46,8 +47,6 @@ public class IRFileAnalyze implements BuiltIn {
     @Override
     public String toString() {
         String ret = "";
-        ret += "target datalayout = \"e-m:e-p:32:32-p270:32:32-p271:32:32-p272:64:64-f64:32:64-f80:32-n8:16:32-S128\"\n";
-        ret += "target triple = \"i386-pc-linux-gnu\"\n\n";
         for (IRStruct ss : str) {
             ret += ss + " = type {";
             for (int i = 0; i < ss.member.size(); i++) {
@@ -81,6 +80,7 @@ public class IRFileAnalyze implements BuiltIn {
         ret += "declare i8 @__mx_strge(i8*, i8*)\n";
         ret += "declare i8 @__mx_streq(i8*, i8*)\n";
         ret += "declare i8 @__mx_strneq(i8*, i8*)\n\n";
+
         for (IRFunction ff : fuc) {
             ret += ff + "\n";
         }

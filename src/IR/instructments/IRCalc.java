@@ -34,27 +34,64 @@ public class IRCalc extends IROrders{
         vis.visit(this);
     }
 
-    public IRIntConst calc() {
+    @Override
+    public void replaceU(IRBasic o, IRBasic n) {
+        ll=ll==o?n:ll;
+        rr=rr==o?n:rr;
+    }
+
+    @Override
+    public LinkedHashSet<IRBasic> getU() {
+        LinkedHashSet<IRBasic> r = new LinkedHashSet<>();
+        r.add(ll);
+        r.add(rr);
+        return r;
+    }
+
+    @Override
+    public IRRegister getD() {
+        return res;
+    }
+
+    public IRIntConst calcConst() {
         if(ll instanceof IRIntConst && rr instanceof IRIntConst) {
-            int lv = ((IRIntConst)ll).value;
-            int rv = ((IRIntConst)rr).value;
-            int rr = 0;
+            int lll = ((IRIntConst) ll).value;
+            int rrr = ((IRIntConst) rr).value;
+            int r = 0;
             switch (op) {
-                case "add" -> rr=lv+rv;
-                case "sub" -> rr=lv-rv;
-                case "mul" -> rr=lv*rv;
-                case "sdiv" -> {
-                    if(rv == 0) return null;
-                    rr=lv/rv;
-                }
-                case "srem" -> rr=lv%rv;
-                case "shl" -> rr=lv<<rv;
-                case "asdr" -> rr=lv>>rv;
-                case "and" -> rr=lv&rv;
-                case "or" -> rr=lv|rv;
-                case "xor" -> rr=lv^rv;
+                case "add":
+                    r = lll + rrr;
+                    break;
+                case "sub":
+                    r = lll - rrr;
+                    break;
+                case "mul":
+                    r = lll * rrr;
+                    break;
+                case "sdiv":
+                    if (rrr == 0) return null;
+                    r = lll / rrr;
+                    break;
+                case "srem":
+                    r = lll % rrr;
+                    break;
+                case "shl":
+                    r = lll << rrr;
+                    break;
+                case "ashr":
+                    r = lll >> rrr;
+                    break;
+                case "and":
+                    r = lll & rrr;
+                    break;
+                case "or":
+                    r = lll | rrr;
+                    break;
+                case "xor":
+                    r = lll ^ rrr;
+                    break;
             }
-            return new IRIntConst(rr);
+            return new IRIntConst(r);
         }
         return null;
     }

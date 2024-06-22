@@ -14,9 +14,10 @@ public class IRFunction {
     public LinkedList<IRBlock> blocks = new LinkedList<>();
     public ArrayList<IRRegister> para = new ArrayList<>();
     public ArrayList<IRAlloca> alloca = new ArrayList<>();
-    public IRBlock entry, exit;
+    public IRBlock exit;
+    public IRBlock entry;
     public IRRegister ret;
-    public HashMap<IRRegister, HashSet<IROrders>> lii = new HashMap<>();
+    public HashMap<IRRegister,HashSet<IROrders>> list = new HashMap<>();
 
     public IRFunction(String name_, IRType tt) {
         this.name = name_;
@@ -31,7 +32,7 @@ public class IRFunction {
     public void finish() {
         entry = blocks.getFirst();
         for (int i = alloca.size() - 1; i >= 0; i--) {
-            entry.insts.add(alloca.get(i));
+            entry.insts.addFirst(alloca.get(i));
         }
         blocks.add(exit);
     }

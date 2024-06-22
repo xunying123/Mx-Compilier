@@ -12,7 +12,7 @@ public class IRBitcast extends IRCast{
 
     @Override
     public String toString() {
-        return dest+"= bitcast "+value.toStringT()+"to"+type;
+        return dest+" = bitcast "+value.toStringT()+" to "+type;
     }
 
 

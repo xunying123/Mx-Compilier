@@ -4,7 +4,7 @@ import src.IR.irtype.IRType;
 
 public class IRRegister extends IRBasic{
     public String name;
-    public int index=1;
+    public int index=-1;
     public static int cnt=0;
 
     public IRRegister(String name, IRType tt) {
@@ -15,7 +15,7 @@ public class IRRegister extends IRBasic{
     @Override
     public String toString() {
         if(index==-1 && (name==null || !name.equals("retval"))) index=cnt++;
-        return "%" + ((name!=null && name.equals("retval"))?name:"."+String.valueOf(index));
+        return "%." + ((name!=null && name.equals("retval"))?name:String.valueOf(index));
     }
 
     @Override

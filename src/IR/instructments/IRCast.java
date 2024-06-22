@@ -25,4 +25,20 @@ public abstract class IRCast extends IROrders{
         vis.visit(this);
     }
 
+    @Override
+    public void replaceU(IRBasic o, IRBasic n) {
+        value = value==o?n:value;
+    }
+
+    @Override
+    public LinkedHashSet<IRBasic> getU() {
+        LinkedHashSet<IRBasic> rr = new LinkedHashSet<>();
+        rr.add(value);
+        return rr;
+    }
+
+    @Override
+    public IRRegister getD() {
+        return dest;
+    }
 }

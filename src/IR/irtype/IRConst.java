@@ -7,7 +7,7 @@ public abstract class IRConst extends IRBasic {
         super(tt);
     }
 
-    public abstract boolean isZero();
+    public abstract boolean is0() ;
 
-    public abstract boolean equals(IRConst ot);
+    public abstract boolean equals(IRConst other);
 }

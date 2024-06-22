@@ -14,17 +14,17 @@ public class IRCondConst extends IRConst {
     }
 
     @Override
-    public boolean isZero() {
-        return !value;
-    }
-
-    @Override
-    public boolean equals(IRConst ot) {
-        return (ot instanceof IRCondConst) && ((IRCondConst) ot).value==value;
-    }
-
-    @Override
     public String toStringT() {
-        return "i1 "+toString();
+        return "i1 "+ this;
+    }
+
+    @Override
+    public boolean equals(IRConst other) {
+        return other instanceof IRCondConst && ((IRCondConst) other).value ==value;
+    }
+
+    @Override
+    public boolean is0() {
+        return !value;
     }
 }

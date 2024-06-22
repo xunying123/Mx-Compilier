@@ -9,22 +9,22 @@ public class IRBoolConst extends IRConst {
     }
 
     @Override
-    public boolean isZero() {
-        return !value;
-    }
-
-    @Override
-    public boolean equals(IRConst ot) {
-        return (ot instanceof IRBoolConst) && (((IRBoolConst) ot).value == value);
-    }
-
-    @Override
     public String toString() {
         return value ? "1" : "0";
     }
 
     @Override
     public String toStringT() {
-        return "i8 " + toString();
+        return "i8 " + this;
+    }
+
+    @Override
+    public boolean equals(IRConst other) {
+        return other instanceof IRBoolConst && ((IRBoolConst) other).value == value;
+    }
+
+    @Override
+    public boolean is0() {
+        return !value;
     }
 }

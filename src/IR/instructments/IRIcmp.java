@@ -32,23 +32,54 @@ public class IRIcmp extends IROrders{
 
     @Override
     public String toString() {
-        return reg+" = icmp "+op+" "+type+" "+ll+" "+rr;
+        return reg+" = icmp "+op+" "+type+" "+ll+", "+rr;
     }
 
-    public IRBasic calc() {
-        if(ll instanceof IRIntConst && rr instanceof IRIntConst) {
-            int lv = ((IRIntConst)ll).value;
-            int rv = ((IRIntConst)rr).value;
-            boolean rr = false;
+    @Override
+    public IRRegister getD() {
+        return reg;
+    }
+
+    @Override
+    public LinkedHashSet<IRBasic> getU() {
+        LinkedHashSet<IRBasic> r = new LinkedHashSet<>();
+        r.add(ll);
+        r.add(rr);
+        return r;
+    }
+
+    @Override
+    public void replaceU(IRBasic o, IRBasic n) {
+        ll=ll==o?n:ll;
+        rr=rr==o?n:rr;
+    }
+
+    public IRCondConst calc() {
+        if (ll instanceof IRIntConst && rr instanceof IRIntConst) {
+            int lll = ((IRIntConst) ll).value;
+            int rrr = ((IRIntConst) rr).value;
+            boolean re = false;
             switch (op) {
-                case "eq" -> rr=lv==rv;
-                case "ne" -> rr=lv!=rv;
-                case "sgt" -> rr=lv>rv;
-                case "sge" -> rr=lv>=rv;
-                case "slt" -> rr=lv<rv;
-                case "sle" -> rr=lv<=rv;
+                case "eq":
+                    re = lll == rrr;
+                    break;
+                case "ne":
+                    re = lll != rrr;
+                    break;
+                case "sgt":
+                    re = lll > rrr;
+                    break;
+                case "sge":
+                    re = lll >= rrr;
+                    break;
+                case "slt":
+                    re = lll < rrr;
+                    break;
+                case "sle":
+                    re = lll <= rrr;
+                    break;
             }
-            return new IRCondConst(rr);
+            return new IRCondConst(re);
         }
         return null;
     }

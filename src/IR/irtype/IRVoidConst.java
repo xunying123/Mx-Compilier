@@ -11,17 +11,17 @@ public class IRVoidConst extends IRConst{
     }
 
     @Override
-    public boolean isZero() {
-        return false;
-    }
-
-    @Override
-    public boolean equals(IRConst ot) {
-        return ot instanceof IRVoidConst;
-    }
-
-    @Override
     public String toStringT() {
         return toString();
+    }
+
+    @Override
+    public boolean equals(IRConst other) {
+        return other instanceof IRVoidConst;
+    }
+
+    @Override
+    public boolean is0() {
+        return false;
     }
 }

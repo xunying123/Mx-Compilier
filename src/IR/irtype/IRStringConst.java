@@ -14,23 +14,13 @@ public class IRStringConst extends IRConst {
     }
 
     @Override
-    public boolean equals(IRConst ot) {
-        return (ot instanceof IRStringConst) && ((IRStringConst) ot).value.equals(value);
-    }
-
-    @Override
-    public boolean isZero() {
-        return false;
-    }
-
-    @Override
     public String toString() {
-        return "@str." + String.valueOf(num);
+        return "@str." + (num);
     }
 
     @Override
     public String toStringT() {
-        return "[" + String.valueOf(size) + "x i8]" + toString();
+        return "[" + (size) + " x i8]* " + this;
     }
 
     public String printS() {
@@ -45,5 +35,15 @@ public class IRStringConst extends IRConst {
             }
         }
         return rr + "\\00";
+    }
+
+    @Override
+    public boolean is0() {
+        return false;
+    }
+
+    @Override
+    public boolean equals(IRConst other) {
+        return other instanceof IRStringConst && ((IRStringConst) other).value.equals(value);
     }
 }

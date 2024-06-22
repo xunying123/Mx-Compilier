@@ -15,6 +15,6 @@ public class leftEx extends Untary {
 
     @Override
     public void accept(Visitor vis) {
-        super.accept(vis);
+        vis.visit(this);
     }
 }

@@ -26,7 +26,6 @@ public class IRBuilder implements Visitor, BuiltIn {
     Scope currentScope;
     IRFileAnalyze root;
     HashMap<String, IRStruct> structMap = new HashMap<>();
-    HashMap<String, Integer> arraySize = new HashMap<>();
     int index = -1;
 
     public IRBuilder(IRFileAnalyze rr, GlobalScope gg) {
@@ -49,7 +48,6 @@ public class IRBuilder implements Visitor, BuiltIn {
     public void visit(ParameterNode node) {
         for (index = 0; index < node.list.size(); index++) {
             Declaration dd = node.list.get(index);
-            assert dd.iniVal == null;
             dd.accept(this);
             IRRegister in = new IRRegister("", dd.type.irType);
             currentFunction.para.add(in);
@@ -84,11 +82,12 @@ public class IRBuilder implements Visitor, BuiltIn {
         currentScope = new Scope(currentScope, node);
         if (node.var != null) node.var.accept(this);
         if (node.exp1 != null) node.exp1.accept(this);
-        node.cond = new IRBlock(currentFunction, "for.cond_", currentBlock.depth + 1);
-        node.loop = new IRBlock(currentFunction, "for,loop_", currentBlock.depth + 1);
-        node.block = new IRBlock(currentFunction, "for.step_", currentBlock.depth + 1);
-        node.next = new IRBlock(currentFunction, "for.end_", currentBlock.depth);
-        node.next.ter = new IRJump(currentBlock, node.cond);
+        node.cond = new IRBlock(currentFunction, "for.cond_",currentBlock.depth+1);
+        node.loop = new IRBlock(currentFunction, "for.loop_",currentBlock.depth+1);
+        node.block = new IRBlock(currentFunction, "for.step_",currentBlock.depth+1);
+        node.next = new IRBlock(currentFunction, "for.end_",currentBlock.depth);
+        node.next.ter = currentBlock.ter;
+        currentBlock.ter = new IRJump(currentBlock, node.cond);
         currentBlock.isFinished = true;
         currentBlock = currentFunction.add(node.cond);
         if (node.loopExp != null) {
@@ -105,6 +104,7 @@ public class IRBuilder implements Visitor, BuiltIn {
         currentBlock.isFinished = true;
         currentBlock = currentFunction.add(node.block);
         currentScope = currentScope.parent;
+
         if (node.exp2 != null) node.exp2.accept(this);
         currentBlock.ter = new IRJump(currentBlock, node.cond);
         currentBlock.isFinished = true;
@@ -117,16 +117,16 @@ public class IRBuilder implements Visitor, BuiltIn {
         node.exp.accept(this);
         IRBasic cond = getCond(node.exp);
         IRBlock tt = currentBlock;
-        IRBlock next = new IRBlock(currentFunction, "if.end_", currentBlock.depth);
+        IRBlock next = new IRBlock(currentFunction, "if.end_",currentBlock.depth);
         next.ter = currentBlock.ter;
-        IRBlock then = new IRBlock(currentFunction, "if.then_", next, currentBlock.depth);
+        IRBlock then = new IRBlock(currentFunction, "if.then_", next,currentBlock.depth);
         currentScope = new Scope(currentScope);
         currentBlock.isFinished = true;
         currentBlock = currentFunction.add(then);
         node.trueS.forEach(ss -> ss.accept(this));
         currentScope = currentScope.parent;
         if (node.falseS != null && !node.falseS.isEmpty()) {
-            IRBlock elseB = new IRBlock(currentFunction, "if.end_", currentBlock.depth);
+            IRBlock elseB = new IRBlock(currentFunction, "if.else_", next,currentBlock.depth);
             currentScope = new Scope(currentScope);
             currentBlock.isFinished = true;
             currentBlock = currentFunction.add(elseB);
@@ -152,9 +152,9 @@ public class IRBuilder implements Visitor, BuiltIn {
 
     @Override
     public void visit(While node) {
-        node.cond = new IRBlock(currentFunction, "while.cond_", currentBlock.depth + 1);
-        node.loop = new IRBlock(currentFunction, "while.loop_", currentBlock.depth + 1);
-        node.next = new IRBlock(currentFunction, "while.end_", currentBlock.depth);
+        node.cond = new IRBlock(currentFunction, "while.cond_",currentBlock.depth+1);
+        node.loop = new IRBlock(currentFunction, "while.loop_",currentBlock.depth+1);
+        node.next = new IRBlock(currentFunction, "while.end_",currentBlock.depth);
         node.next.ter = currentBlock.ter;
         currentBlock.ter = new IRJump(currentBlock, node.cond);
         currentBlock.isFinished = true;
@@ -186,11 +186,12 @@ public class IRBuilder implements Visitor, BuiltIn {
         else {
             IRRegister temp = new IRRegister(".shortCirTemp", new IRPtr(irBool));
             currentBlock.add(new IRAlloca(currentBlock, irBool, temp));
-            IRBlock rB = new IRBlock(currentFunction, "rheBlock_", currentBlock.depth);
-            IRBlock trueB = new IRBlock(currentFunction, "trueBlock_", currentBlock.depth);
-            IRBlock falseB = new IRBlock(currentFunction, "falseBlock_", currentBlock.depth);
-            IRBlock nB = new IRBlock(currentFunction, "shortCir.end_", currentBlock.depth);
-            nB.ter = node.op.equals("&&") ? new IRBranch(currentBlock, getCond(node.leftNode), rB, falseB) : new IRBranch(currentBlock, getCond(node.leftNode), trueB, rB);
+            IRBlock rB = new IRBlock(currentFunction, "rhsBlock_",currentBlock.depth);
+            IRBlock trueB = new IRBlock(currentFunction, "trueBlock_",currentBlock.depth);
+            IRBlock falseB = new IRBlock(currentFunction, "falseBlock_",currentBlock.depth);
+            IRBlock nB = new IRBlock(currentFunction, "shortCir.end_",currentBlock.depth);
+            nB.ter = currentBlock.ter;
+            currentBlock.ter = node.op.equals("&&") ? new IRBranch(currentBlock, getCond(node.leftNode), rB, falseB) : new IRBranch(currentBlock, getCond(node.leftNode), trueB, rB);
             currentBlock.isFinished = true;
             currentBlock = currentFunction.add(rB);
             node.rightNode.accept(this);
@@ -212,148 +213,103 @@ public class IRBuilder implements Visitor, BuiltIn {
             return;
         }
         IRRegister dest = null;
-        IRType opType = null;
+        IRType opType;
         String op = null;
         if (node.leftNode.type.equals(string) || node.rightNode.type.equals(string)) {
             switch (node.op) {
                 case "+" -> {
                     node.value = new IRRegister("", irString);
-                    currentBlock.add(new IRCall(currentBlock, (IRRegister) node.value, irString, "mx_stradd", getValue(node.leftNode), getValue(node.rightNode)));
+                    currentBlock.add(new IRCall(currentBlock, (IRRegister) node.value, irString, "__mx_stradd", getValue(node.leftNode), getValue(node.rightNode)));
                 }
-                case "<" -> {
-                    node.value = stringCmp("mx_strlt", getValue(node.leftNode), getValue(node.rightNode));
-                }
-                case "<=" -> {
-                    node.value = stringCmp("mx_strle", getValue(node.leftNode), getValue(node.rightNode));
-                }
-                case ">" -> {
-                    node.value = stringCmp("mx_strgt", getValue(node.leftNode), getValue(node.rightNode));
-                }
-                case ">=" -> {
-                    node.value = stringCmp("mx_strge", getValue(node.leftNode), getValue(node.rightNode));
-                }
-                case "==" -> {
-                    node.value = stringCmp("mx_streq", getValue(node.leftNode), getValue(node.rightNode));
-                }
-                case "!=" -> {
-                    node.value = stringCmp("mx_strne", getValue(node.leftNode), getValue(node.rightNode));
-                }
+                case "<" -> node.value = stringCmp("__mx_strlt", getValue(node.leftNode), getValue(node.rightNode));
+                case "<=" -> node.value = stringCmp("__mx_strle", getValue(node.leftNode), getValue(node.rightNode));
+                case ">" -> node.value = stringCmp("__mx_strgt", getValue(node.leftNode), getValue(node.rightNode));
+                case ">=" -> node.value = stringCmp("__mx_strge", getValue(node.leftNode), getValue(node.rightNode));
+                case "==" -> node.value = stringCmp("__mx_streq", getValue(node.leftNode), getValue(node.rightNode));
+                case "!=" -> node.value = stringCmp("__mx_strne", getValue(node.leftNode), getValue(node.rightNode));
             }
         } else {
-            IRBasic ll = getValue(node.leftNode);
-            IRBasic rr = getValue(node.rightNode);
+            IRBasic lhs = getValue(node.leftNode), rhs = getValue(node.rightNode);
             switch (node.op) {
                 case "+" -> {
-                    if (ll instanceof IRConst && rr instanceof IRConst) {
-                        node.value = new IRIntConst(((IRIntConst) ll).value + ((IRIntConst) rr).value);
-                        op = "add";
-                        break;
-                    }
+                    if (lhs instanceof IRConst && rhs instanceof IRConst)
+                        node.value = new IRIntConst(((IRIntConst) lhs).value + ((IRIntConst) rhs).value);
+                    op = "add";
                 }
                 case "-" -> {
-                    if (ll instanceof IRConst && rr instanceof IRConst) {
-                        node.value = new IRIntConst(((IRIntConst) ll).value - ((IRIntConst) rr).value);
-                        op = "sub";
-                        break;
-                    }
+                    if (lhs instanceof IRConst && rhs instanceof IRConst)
+                        node.value = new IRIntConst(((IRIntConst) lhs).value - ((IRIntConst) rhs).value);
+                    op = "sub";
                 }
                 case "*" -> {
-                    if (ll instanceof IRConst && rr instanceof IRConst) {
-                        node.value = new IRIntConst(((IRIntConst) ll).value * ((IRIntConst) rr).value);
-                        op = "mul";
-                        break;
-                    }
+                    if (lhs instanceof IRConst && rhs instanceof IRConst)
+                        node.value = new IRIntConst(((IRIntConst) lhs).value * ((IRIntConst) rhs).value);
+                    op = "mul";
                 }
                 case "/" -> {
-                    if (ll instanceof IRConst && rr instanceof IRConst) {
-                        node.value = new IRIntConst(((IRIntConst) ll).value / ((IRIntConst) rr).value);
-                        op = "sdiv";
-                        break;
-                    }
+                    if (lhs instanceof IRConst && rhs instanceof IRConst && ((IRIntConst) rhs).value != 0)
+                        node.value = new IRIntConst(((IRIntConst) lhs).value / ((IRIntConst) rhs).value);
+                    op = "sdiv";
                 }
                 case "%" -> {
-                    if (ll instanceof IRConst && rr instanceof IRConst) {
-                        node.value = new IRIntConst(((IRIntConst) ll).value % ((IRIntConst) rr).value);
-                        op = "srem";
-                        break;
-                    }
+                    if (lhs instanceof IRConst && rhs instanceof IRConst)
+                        node.value = new IRIntConst(((IRIntConst) lhs).value % ((IRIntConst) rhs).value);
+                    op = "srem";
                 }
                 case "<<" -> {
-                    if (ll instanceof IRConst && rr instanceof IRConst) {
-                        node.value = new IRIntConst(((IRIntConst) ll).value << ((IRIntConst) rr).value);
-                        op = "shl";
-                        break;
-                    }
+                    if (lhs instanceof IRConst && rhs instanceof IRConst)
+                        node.value = new IRIntConst(((IRIntConst) lhs).value << ((IRIntConst) rhs).value);
+                    op = "shl";
                 }
                 case ">>" -> {
-                    if (ll instanceof IRConst && rr instanceof IRConst) {
-                        node.value = new IRIntConst(((IRIntConst) ll).value >> ((IRIntConst) rr).value);
-                        op = "ashr";
-                        break;
-                    }
+                    if (lhs instanceof IRConst && rhs instanceof IRConst)
+                        node.value = new IRIntConst(((IRIntConst) lhs).value >> ((IRIntConst) rhs).value);
+                    op = "ashr";
                 }
                 case "&" -> {
-                    if (ll instanceof IRConst && rr instanceof IRConst) {
-                        node.value = new IRIntConst(((IRIntConst) ll).value & ((IRIntConst) rr).value);
-                        op = "and";
-                        break;
-                    }
+                    if (lhs instanceof IRConst && rhs instanceof IRConst)
+                        node.value = new IRIntConst(((IRIntConst) lhs).value & ((IRIntConst) rhs).value);
+                    op = "and";
                 }
                 case "|" -> {
-                    if (ll instanceof IRConst && rr instanceof IRConst) {
-                        node.value = new IRIntConst(((IRIntConst) ll).value | ((IRIntConst) rr).value);
-                        op = "or";
-                        break;
-                    }
+                    if (lhs instanceof IRConst && rhs instanceof IRConst)
+                        node.value = new IRIntConst(((IRIntConst) lhs).value | ((IRIntConst) rhs).value);
+                    op = "or";
                 }
                 case "^" -> {
-                    if (ll instanceof IRConst && rr instanceof IRConst) {
-                        node.value = new IRIntConst(((IRIntConst) ll).value ^ ((IRIntConst) rr).value);
-                        op = "xor";
-                        break;
-                    }
+                    if (lhs instanceof IRConst && rhs instanceof IRConst)
+                        node.value = new IRIntConst(((IRIntConst) lhs).value ^ ((IRIntConst) rhs).value);
+                    op = "xor";
                 }
                 case "<" -> {
-                    if (ll instanceof IRConst && rr instanceof IRConst) {
-                        node.value = new IRCondConst(((IRIntConst) ll).value < ((IRIntConst) rr).value);
-                        op = "slt";
-                        break;
-                    }
+                    if (lhs instanceof IRConst && rhs instanceof IRConst)
+                        node.value = new IRCondConst(((IRIntConst) lhs).value < ((IRIntConst) rhs).value);
+                    op = "slt";
                 }
                 case "<=" -> {
-                    if (ll instanceof IRConst && rr instanceof IRConst) {
-                        node.value = new IRCondConst(((IRIntConst) ll).value <= ((IRIntConst) rr).value);
-                        op = "sle";
-                        break;
-                    }
+                    if (lhs instanceof IRConst && rhs instanceof IRConst)
+                        node.value = new IRCondConst(((IRIntConst) lhs).value <= ((IRIntConst) rhs).value);
+                    op = "sle";
                 }
                 case ">" -> {
-                    if (ll instanceof IRConst && rr instanceof IRConst) {
-                        node.value = new IRCondConst(((IRIntConst) ll).value > ((IRIntConst) rr).value);
-                        op = "sgt";
-                        break;
-                    }
+                    if (lhs instanceof IRConst && rhs instanceof IRConst)
+                        node.value = new IRCondConst(((IRIntConst) lhs).value > ((IRIntConst) rhs).value);
+                    op = "sgt";
                 }
                 case ">=" -> {
-                    if (ll instanceof IRConst && rr instanceof IRConst) {
-                        node.value = new IRCondConst(((IRIntConst) ll).value >= ((IRIntConst) rr).value);
-                        op = "sge";
-                        break;
-                    }
+                    if (lhs instanceof IRConst && rhs instanceof IRConst)
+                        node.value = new IRCondConst(((IRIntConst) lhs).value >= ((IRIntConst) rhs).value);
+                    op = "sge";
                 }
                 case "==" -> {
-                    if (ll instanceof IRConst && rr instanceof IRConst) {
-                        node.value = new IRCondConst(((IRIntConst) ll).value != ((IRIntConst) rr).value);
-                        op = "eq";
-                        break;
-                    }
+                    if (lhs instanceof IRIntConst && rhs instanceof IRIntConst)
+                        node.value = new IRCondConst(((IRIntConst) lhs).value == ((IRIntConst) rhs).value);
+                    op = "eq";
                 }
                 case "!=" -> {
-                    if (ll instanceof IRConst && rr instanceof IRConst) {
-                        node.value = new IRCondConst(((IRIntConst) ll).value != ((IRIntConst) rr).value);
-                        op = "ne";
-                        break;
-                    }
+                    if (lhs instanceof IRIntConst && rhs instanceof IRIntConst)
+                        node.value = new IRCondConst(((IRIntConst) lhs).value != ((IRIntConst) rhs).value);
+                    op = "ne";
                 }
             }
             if (node.value != null) return;
@@ -361,27 +317,27 @@ public class IRBuilder implements Visitor, BuiltIn {
                 case "+", "-", "*", "/", "%", "<<", ">>", "&", "|", "^" -> {
                     opType = irInt;
                     dest = new IRRegister("", irInt);
-                    currentBlock.add(new IRCalc(currentBlock, opType, dest, ll, rr, op));
+                    currentBlock.add(new IRCalc(currentBlock, opType, dest, lhs, rhs, op));
                 }
                 case ">", ">=", "<", "<=" -> {
                     opType = irInt;
                     dest = new IRRegister("", irCond);
-                    currentBlock.add(new IRIcmp(currentBlock, opType, dest, ll, rr, op));
+                    currentBlock.add(new IRIcmp(currentBlock, opType, dest, lhs, rhs, op));
                 }
                 case "==", "!=" -> {
-                    if (ll.type instanceof IRInt && ll.type != irInt) {
+                    if (lhs.type instanceof IRInt && lhs.type != irInt) {
                         IRRegister tmp = new IRRegister("", irInt);
-                        currentBlock.add(new IRZext(currentBlock, tmp, ll, irInt));
-                        ll = tmp;
+                        currentBlock.add(new IRZext(currentBlock, tmp, lhs, irInt));
+                        lhs = tmp;
                     }
-                    if (rr.type instanceof IRInt && rr.type != irInt) {
+                    if (rhs.type instanceof IRInt && rhs.type != irInt) {
                         IRRegister tmp = new IRRegister("", irInt);
-                        currentBlock.add(new IRZext(currentBlock, tmp, rr, irInt));
-                        rr = tmp;
+                        currentBlock.add(new IRZext(currentBlock, tmp, rhs, irInt));
+                        rhs = tmp;
                     }
                     opType = node.leftNode.type.equals(Null) ? node.rightNode.getIRType() : node.leftNode.getIRType();
                     dest = new IRRegister("tmp", irCond);
-                    currentBlock.add(new IRIcmp(currentBlock, opType, dest, ll, rr, op));
+                    currentBlock.add(new IRIcmp(currentBlock, opType, dest, lhs, rhs, op));
                 }
 
             }
@@ -428,21 +384,21 @@ public class IRBuilder implements Visitor, BuiltIn {
         IRCall call = new IRCall(currentBlock, fun.returnType.irType, funcName);
         if (fun == ArraySizeFunc) {
             IRRegister arr = ((ObjectEx) node.functi).objAddr;
-            IRRegister t1, t2 = new IRRegister("", irInt);
+            IRRegister t1, t2 = new IRRegister("", irIntPtr);
             if (arr.type.toString().equals("i32*")) {
                 t1 = arr;
             } else {
-                t1 = new IRRegister("", irInt);
-                currentBlock.add(new IRBitcast(currentBlock, arr, irInt, t1));
+                t1 = new IRRegister("", irIntPtr);
+                currentBlock.add(new IRBitcast(currentBlock, arr, irIntPtr, t1));
             }
-            currentBlock.add(new IRGetelementptr(currentBlock, arr, t1, t2, irInt1));
+            currentBlock.add(new IRGetelementptr(currentBlock, t1, t2, irInt01));
             node.value = new IRRegister("", irInt);
             currentBlock.add(new IRLoad(currentBlock, (IRRegister) node.value, t2));
         } else {
-            if (fun == StringLengthFunc) call.name = "_mx_strlen";
-            else if (fun == substringFunc) call.name = "_mx_substring";
-            else if (fun == parseFunc) call.name = "_mx_parseInt";
-            else if (fun == ordFunc) call.name = "_mx_ord";
+            if (fun == StringLengthFunc) call.name = "strlen";
+            else if (fun == substringFunc) call.name = "__mx_substring";
+            else if (fun == parseFunc) call.name = "__mx_parseInt";
+            else if (fun == ordFunc) call.name = "__mx_ord";
 
             if (fun.className != null) {
                 if (node.functi instanceof ObjectEx) {
@@ -470,7 +426,7 @@ public class IRBuilder implements Visitor, BuiltIn {
     public void visit(NewEXp node) {
         IRType tt = typeTrans(node.type, false);
         if (node.dim > 0) {
-            node.value = node.List.size() > 0 ? newArray(tt, 0, node.List) : new IRNullConst(tt);
+            node.value = !node.List.isEmpty() ? newArray(tt, 0, node.List) : new IRNullConst(tt);
         } else {
             IRStruct claType = (IRStruct) ((IRPtr) tt).PointTo();
             IRRegister callRe = new IRRegister("", irString);
@@ -486,14 +442,14 @@ public class IRBuilder implements Visitor, BuiltIn {
     @Override
     public void visit(Untary node) {
         node.exp.accept(this);
-        IRRegister dest = null;
-        String op = null;
+        IRRegister dest;
+        String op;
         switch (node.op) {
             case "++" -> {
                 op = "add";
                 node.value = getValue(node.exp);
                 dest = new IRRegister("", irInt);
-                currentBlock.add(new IRCalc(currentBlock, irInt, dest, node.value, BuiltIn.irInt1, op));
+                currentBlock.add(new IRCalc(currentBlock, irInt, dest, node.value, irInt1, op));
                 currentBlock.add(new IRStore(currentBlock, dest, node.exp.store));
             }
             case "--" -> {
@@ -503,13 +459,12 @@ public class IRBuilder implements Visitor, BuiltIn {
                 currentBlock.add(new IRCalc(currentBlock, irInt, dest, node.value, BuiltIn.irInt1, op));
                 currentBlock.add(new IRStore(currentBlock, dest, node.exp.store));
             }
-            case "+" -> {
-                node.value = getValue(node.exp);
-            }
+            case "+" -> node.value = getValue(node.exp);
             case "-" -> {
                 op = "sub";
                 dest = new IRRegister("", irInt);
                 currentBlock.add(new IRCalc(currentBlock, irInt, dest, irInt0, getValue(node.exp), op));
+                node.value = dest;
             }
             case "~" -> {
                 op = "xor";
@@ -517,8 +472,7 @@ public class IRBuilder implements Visitor, BuiltIn {
                 currentBlock.add(new IRCalc(currentBlock, irInt, dest, getValue(node.exp), irInt1, op));
             }
             case "!" -> {
-                assert node.exp.type.equals(Bool);
-                op = "not";
+                op = "xor";
                 dest = new IRRegister("", irCond);
                 currentBlock.add(new IRCalc(currentBlock, irCond, dest, getCond(node.exp), irTrue, op));
                 node.value = dest;
@@ -529,11 +483,12 @@ public class IRBuilder implements Visitor, BuiltIn {
     @Override
     public void visit(leftEx node) {
         node.exp.accept(this);
-        IRRegister dest = new IRRegister("", irInt);
-        String op = null;
+        IRRegister dest;
+        String op;
         switch (node.op) {
             case "++" -> {
                 op = "add";
+                dest = new IRRegister("", irInt);
                 currentBlock.add(new IRCalc(currentBlock, irInt, dest, getValue(node.exp), irInt1, op));
                 currentBlock.add(new IRStore(currentBlock, dest, node.exp.store));
                 node.value = dest;
@@ -541,6 +496,7 @@ public class IRBuilder implements Visitor, BuiltIn {
             }
             case "--" -> {
                 op = "sub";
+                dest = new IRRegister("", irInt);
                 currentBlock.add(new IRCalc(currentBlock, irInt, dest, getValue(node.exp), irInt1, op));
                 currentBlock.add(new IRStore(currentBlock, dest, node.exp.store));
                 node.value = dest;
@@ -575,6 +531,39 @@ public class IRBuilder implements Visitor, BuiltIn {
 
     @Override
     public void visit(ternaryEx node) {
+        node.exp1.accept(this);
+        IRBasic cond = getCond(node.exp1);
+        IRBlock tt = currentBlock;
+        IRBlock next = new IRBlock(currentFunction, "ter.end_",currentBlock.depth);
+        next.ter = currentBlock.ter;
+        IRBlock then = new IRBlock(currentFunction, "ter.then_", next,currentBlock.depth);
+        currentScope = new Scope(currentScope);
+        currentBlock.isFinished = true;
+        currentBlock = currentFunction.add(then);
+
+        node.exp2.accept(this);
+        IRRegister temp = new IRRegister("", new IRPtr(typeTrans(node.exp2.type, false)));
+        if (node.exp2.type != Void) {
+            currentBlock.add(new IRAlloca(currentBlock, typeTrans(node.exp2.type, false), temp));
+            addStore(temp, node.exp2);
+        }
+        currentScope = currentScope.parent;
+
+        IRBlock elseB = new IRBlock(currentFunction, "ter.else_", next,currentBlock.depth);
+        currentScope = new Scope(currentScope);
+        currentBlock.isFinished = true;
+
+        currentBlock = currentFunction.add(elseB);
+        node.exp3.accept(this);
+        if (node.exp2.type != Void) {
+            addStore(temp, node.exp3);
+        }
+        currentScope = currentScope.parent;
+        tt.ter = new IRBranch(tt, cond, then, elseB);
+
+        currentBlock.isFinished = true;
+        currentBlock = currentFunction.add(next);
+        node.store = temp;
     }
 
     @Override
@@ -594,7 +583,7 @@ public class IRBuilder implements Visitor, BuiltIn {
             currentStruct.add(node.type.irType, node.name);
         } else {
             IRGlobalVar gg = new IRGlobalVar(node.name, node.type.irType);
-            if (node.iniVal != null && node.iniVal instanceof BasicEx && !node.iniVal.type.equals(string) && !node.iniVal.ss.equals(this)) {
+            if (node.iniVal instanceof BasicEx && !node.iniVal.type.equals(string)) {
                 node.iniVal.accept(this);
                 gg.initValue = getValue(node.iniVal) instanceof IRCondConst ? new IRBoolConst(((IRCondConst) node.iniVal.value).value) : node.iniVal.value;
                 globalScope.addIRVar(node.name, gg);
@@ -602,7 +591,7 @@ public class IRBuilder implements Visitor, BuiltIn {
                 gg.initValue = node.type.irType.defaultValue();
                 globalScope.addIRVar(node.name, gg);
                 if (node.iniVal != null) {
-                    gg.CallInit = true;
+                    gg.isCall = true;
                     IRFunction tt = currentFunction;
                     IRBlock tb = currentBlock;
                     currentFunction = root.initFunc;
@@ -658,13 +647,13 @@ public class IRBuilder implements Visitor, BuiltIn {
             } else {
                 currentFunction.exit.ter = new IRRet(currentFunction.exit, rr);
             }
-            if (name.equals("main")) root.mainFunc = currentFunction;
-            node.sta.forEach(ss -> ss.accept(this));
-            node.irFunc = currentFunction;
-            currentScope = currentScope.parent;
-            currentFunction = null;
-            currentBlock = null;
         }
+        if (name.equals("main")) root.mainFunc = currentFunction;
+        node.sta.forEach(ss -> ss.accept(this));
+        node.irFunc = currentFunction;
+        currentScope = currentScope.parent;
+        currentFunction = null;
+        currentBlock = null;
     }
 
     @Override
@@ -692,7 +681,7 @@ public class IRBuilder implements Visitor, BuiltIn {
     public void visit(VarEx node) {
         node.store = currentScope.getIRVar(node.ss);
         if (node.store == null) {
-            IRRegister tt = (IRRegister) currentScope.getIRVar("this");
+            IRRegister tt = currentScope.getIRVar("this");
             if (tt != null) {
                 IRType oo = ((IRPtr) tt.type).PointTo();
                 IRType or = ((IRPtr) oo).PointTo();
@@ -727,9 +716,9 @@ public class IRBuilder implements Visitor, BuiltIn {
             root.initFunc = null;
         } else {
             root.initFunc.finish();
-            root.fuc.add(root.initFunc);
+            root.fuc.addFirst(root.initFunc);
             IRBlock mainEn = root.mainFunc.blocks.get(0);
-            mainEn.insts.add(new IRCall(mainEn, irVoid, "_mx_global_var_init"));
+            mainEn.insts.addFirst(new IRCall(mainEn, irVoid, "Mx_global_init"));
         }
     }
 
@@ -737,7 +726,6 @@ public class IRBuilder implements Visitor, BuiltIn {
         if (node.value != null) {
             return node.value;
         } else {
-            assert node.store != null;
             IRRegister val = new IRRegister("", ((IRPtr) node.store.type).PointTo());
             currentBlock.add(new IRLoad(currentBlock, val, node.store));
             return node.value = val;
@@ -747,9 +735,7 @@ public class IRBuilder implements Visitor, BuiltIn {
     private IRBasic getCond(ExpressionNode node) {
         IRBasic cond = getValue(node);
         if (cond.type == irBool) {
-            if (cond instanceof IRBoolConst bb) {
-                return bb.value ? irTrue : irFalse;
-            }
+            if (cond instanceof IRBoolConst bo) return bo.value ? irTrue : irFalse;
             IRRegister tt = new IRRegister("", irCond);
             currentBlock.add(new IRTrunc(currentBlock, tt, cond, irCond));
             return tt;
@@ -761,7 +747,7 @@ public class IRBuilder implements Visitor, BuiltIn {
         IRType ir;
         switch (tt.name) {
             case "int" -> ir = irInt;
-            case "bool" -> ir = irBool;
+            case "bool" -> ir = ii ? irCond : irBool;
             case "string" -> ir = irString;
             case "void" -> ir = irVoid;
             default -> ir = new IRPtr(structMap.get(tt.name), 1);
@@ -773,12 +759,13 @@ public class IRBuilder implements Visitor, BuiltIn {
     private void addStore(IRRegister pp, ExpressionNode node) {
         if (getValue(node).type == irCond) {
             if (node.value instanceof IRCondConst cc) {
-                currentBlock.add(new IRStore(currentBlock, cc.value ? irTrue : irFalse, pp));
+                currentBlock.add(new IRStore(currentBlock, cc.value ? irBoolTrue : irBoolFalse, pp));
             } else {
                 IRRegister tt = new IRRegister("", irBool);
                 currentBlock.add(new IRZext(currentBlock, tt, node.value, irBool));
                 currentBlock.add(new IRStore(currentBlock, tt, pp));
             }
+
         } else {
             if (node.value instanceof IRNullConst) {
                 node.value = new IRNullConst(((IRPtr) pp.type).PointTo());
@@ -811,6 +798,7 @@ public class IRBuilder implements Visitor, BuiltIn {
             currentBlock.add(new IRCalc(currentBlock, irInt, (IRRegister) size, tmSi, BuiltIn.irInt4, "add"));
         }
         currentBlock.add(new IRCall(currentBlock, callReg, new IRPtr(irChar), "malloc", size));
+
         IRRegister ptr, tm1 = new IRRegister("", irIntPtr), tm2 = new IRRegister("", irIntPtr);
         currentBlock.add(new IRBitcast(currentBlock, callReg, irIntPtr, tm1));
         currentBlock.add(new IRStore(currentBlock, cnt, tm1));
@@ -824,11 +812,12 @@ public class IRBuilder implements Visitor, BuiltIn {
             IRRegister idx = new IRRegister("", irIntPtr);
             currentBlock.add(new IRAlloca(currentBlock, irInt, idx));
             currentBlock.add(new IRStore(currentBlock, irInt0, idx));
-            IRBlock cond = new IRBlock(currentFunction, "for.cond_", currentBlock.depth + 1);
-            IRBlock loop = new IRBlock(currentFunction, "for,loop_", currentBlock.depth + 1);
-            IRBlock step = new IRBlock(currentFunction, "for.step_", currentBlock.depth + 1);
-            IRBlock next = new IRBlock(currentFunction, "for.end_", currentBlock.depth);
-            next.ter = new IRJump(currentBlock, cond);
+            IRBlock cond = new IRBlock(currentFunction, "for.cond_",currentBlock.depth+1);
+            IRBlock loop = new IRBlock(currentFunction, "for.loop_",currentBlock.depth+1);
+            IRBlock step = new IRBlock(currentFunction, "for.step_",currentBlock.depth+1);
+            IRBlock next = new IRBlock(currentFunction, "for.end_",currentBlock.depth);
+            next.ter = currentBlock.ter;
+            currentBlock.ter = new IRJump(currentBlock, cond);
             currentBlock.isFinished = true;
 
             currentBlock = currentFunction.add(cond);
@@ -841,18 +830,19 @@ public class IRBuilder implements Visitor, BuiltIn {
 
             currentBlock = currentFunction.add(loop);
             IRBasic ipVal = newArray(((IRPtr) type).PointTo(), at + 1, list);
-            IRRegister val2 = new IRRegister("", irInt);
             IRRegister iPtr = new IRRegister("", type);
-            currentBlock.add(new IRLoad(currentBlock, val2, idx));
-            currentBlock.add(new IRGetelementptr(currentBlock, ptr, iPtr, val2));
+            IRRegister v1 = new IRRegister("",irInt);
+            currentBlock.add(new IRLoad(currentBlock,v1,idx));
+            currentBlock.add(new IRGetelementptr(currentBlock, ptr, iPtr, v1));
             currentBlock.add(new IRStore(currentBlock, ipVal, iPtr));
+            currentBlock.ter = new IRJump(currentBlock, step);
             currentBlock.isFinished = true;
 
             currentBlock = currentFunction.add(step);
             IRRegister iRe = new IRRegister("", irInt);
-            IRRegister val3 = new IRRegister("", irInt);
-            currentBlock.add(new IRLoad(currentBlock, val3, idx));
-            currentBlock.add(new IRCalc(currentBlock, irInt, iRe, val3, irInt1, "add"));
+            IRRegister v2 = new IRRegister("",irInt);
+            currentBlock.add(new IRLoad(currentBlock,v2,idx));
+            currentBlock.add(new IRCalc(currentBlock, irInt, iRe, v2, irInt1, "add"));
             currentBlock.add(new IRStore(currentBlock, iRe, idx));
             currentBlock.ter = new IRJump(currentBlock, cond);
             currentBlock.isFinished = true;

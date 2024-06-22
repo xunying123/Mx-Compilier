@@ -39,8 +39,8 @@ public interface BuiltIn {
     IRBoolConst irBoolTrue = new IRBoolConst(true);
     IRBoolConst irBoolFalse = new IRBoolConst(false);
     IRIntConst irInt0 = new IRIntConst(0);
-    IRIntConst irIntn1 = new IRIntConst(-1);
     IRIntConst irInt1 = new IRIntConst(1);
     IRIntConst irInt4 = new IRIntConst(4);
+    IRIntConst irInt01 = new IRIntConst(-1);
 
 }
